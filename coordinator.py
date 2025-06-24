@@ -1,8 +1,9 @@
 from enum import Enum
+from time import sleep
 
 from agent import Agent, AgentAction, AgentCommand
 from robot import BasketAction, MockRobot, Robot, RobotCommand
-from voice import MockVoiceListener, VoiceListener
+from voice import MockVoiceListener, VoiceListener, VoiceSpeaker
 
 
 class CoordinatorState(Enum):
@@ -39,22 +40,30 @@ class Coordinator:
         self.state = CoordinatorState.USER_INPUT
         self.robot = MockRobot()
         self.agent = Agent()
-        self.voice_listener = MockVoiceListener()
+        self.voice_listener = VoiceListener()
+        self.voice_speaker = VoiceSpeaker()
     
     def run(self):
+        self.robot.start()
+        print("waiting for init...")
+        sleep(10)
         while self.state != CoordinatorState.DONE:
+            print("getting user input")
             user_input = self.voice_listener.get_voice()
             self.robot.ask_update_item_list()
+            print("running llm step")
             self.handle_user_input(user_input)
 
     def user_communication(self, info):
         print(f"################ USER COMMUNICATION:\n{info}")
+        self.voice_speaker.speak(info)
     
     def handle_user_input(self, user_input):
         self.state = CoordinatorState.LLM_PROCESSING
         self.agent.add_input(user_input=user_input, system_input=str(self.robot.state))
         done = False
         while not done: # Continue processing results until the LLM is either done or requires user input
+            print(f"Handling state: {self.state}")
             agent_command = self.agent.process_input()
             if agent_command.action.is_robot_action():
                 robot_command = translate_agent_command_to_robot_command(agent_command)
@@ -72,4 +81,5 @@ class Coordinator:
                 self.user_communication("Agent considers goal completed")
                 self.state = CoordinatorState.DONE
                 done = True
+        print(f"final state: {self.state}")
         return

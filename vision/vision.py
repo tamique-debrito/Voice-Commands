@@ -5,10 +5,11 @@ import time
 
 # Constants
 WINDOW_NAME = "Object Tracker"
-MOTION_LINE = [(500, 50), (25, 100)] # The approximate line of motion along which the basket moves
+MOTION_LINE = [(150, 245), (500, 140)] # The approximate line of motion along which the basket moves
 PREDEFINED_RECT = (MOTION_LINE[0][0], MOTION_LINE[0][1], 50, 50)  # (x, y, w, h) of the area to place the object
 
-LOWER_THRESHOLD = 75 # The threshold to use to determine whether the basket has been lowered
+LOWER_DISTANCE = 35 # The threshold to use to determine whether the basket has been lowered
+RAISE_LOWER_THRESHOLD = 0.1 # The threshold for considering the basket to be raised or lowered as a fraction of the raise/lower distance
 POS_THRESHOLD = 0.05 # The threshold for considering the basket to be at a certain location as a fraction of distance along the motion line
 
 class Vision:
@@ -37,7 +38,7 @@ class Vision:
     def get_info(self, checkpoint_ref):
         """
         checkpoint_ref: the "checkpoint" along the motion line (one at each end and one in the middle) to compare the current position against
-        returns where the current position is relative to the checkpoint (1 = to the left, 0 = at, -1 = to the right) as well as whether the bucket should be considered lowered
+        returns where the current position is relative to the checkpoint (1 = to the left, 0 = at, -1 = to the right) as well as whether the bucket should be considered raised (+1), lowered (-1), or somewhere in-between (0)
         """
         bbox = self.get_bbox()
         if bbox is None:
@@ -46,7 +47,14 @@ class Vision:
         x_offset = x - MOTION_LINE[0][0] # The x offset from the reference point
         x_frac = x_offset / self.x_range
         y_ref = MOTION_LINE[0][1] + self.slope * x_offset # The reference for the y coordinate based on the motion line and the x position
-        is_lowered = abs(y - y_ref) >= LOWER_THRESHOLD
+        y_frac = abs(y - y_ref) / LOWER_DISTANCE
+        
+        if abs(y_frac - 1.0) <= RAISE_LOWER_THRESHOLD:
+            raise_lower = -1
+        elif abs(y_frac - 0.0) <= RAISE_LOWER_THRESHOLD:
+            raise_lower = +1
+        else:
+            raise_lower = 0
         
         if checkpoint_ref == 0:
             checkpoint_frac = 0.0
@@ -61,7 +69,7 @@ class Vision:
         elif x_frac > checkpoint_frac:
             checkpoint_rel = -1
 
-        return checkpoint_rel, is_lowered
+        return checkpoint_rel, raise_lower
 
 
     def stop(self):
@@ -97,7 +105,7 @@ class Vision:
 
             if tracking:
                 cv2.line(frame, MOTION_LINE[0], MOTION_LINE[1], (0, 255, 0), 2)
-                cv2.line(frame, (MOTION_LINE[0][0], MOTION_LINE[0][1] + LOWER_THRESHOLD), (MOTION_LINE[1][0], MOTION_LINE[1][1] + LOWER_THRESHOLD), (40, 100, 40), 2)
+                cv2.line(frame, (MOTION_LINE[0][0], MOTION_LINE[0][1] + LOWER_DISTANCE), (MOTION_LINE[1][0], MOTION_LINE[1][1] + LOWER_DISTANCE), (40, 100, 40), 2)
                 success, bbox = tracker.update(frame)
                 if success:
                     x, y, w, h = [int(v) for v in bbox]
@@ -129,7 +137,7 @@ class Vision:
 if __name__ == "__main__":
     vis = Vision()
     vis.start()
-    for i in range(10):
+    while True:
         time.sleep(5)
         print(vis.get_bbox())
         print(vis.get_info(0))

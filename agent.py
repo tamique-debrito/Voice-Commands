@@ -99,7 +99,7 @@ class Agent:
     def process_input(self) -> AgentCommand:
         print("Processing input")
         response = client.responses.parse(
-            model="gpt-4o-mini",
+            model="gpt-4.1",
             temperature=0.0,
             input=[
                 history_item.to_llm_input() for history_item in self.state.history
@@ -108,6 +108,7 @@ class Agent:
         )
 
         command = response.output_parsed
+        print(f"got command: {command}")
         if command is None:
             raise ValueError("Didn't get a command")
         self.state.record_agent_response(str(command))
