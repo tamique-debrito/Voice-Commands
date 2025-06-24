@@ -7,6 +7,9 @@ The point is to explore how an AI with control of physical objects could be prac
 
 In this scenario, you would say to the AI: "I am at the desk. My drink is by the closet. I want my drink brought to me. My friend is at the closet". The AI will then realize that it needs to incorporate the friend into the equation, make a plan to move the basket to the closet, lower the basket, ask the friend to put the drink in the basket, raise the basket, bring the basket to the desk, and lower the basket.
 
+Here is a diagram of the system components:
+![System Diagram](system.png)
+
 The workflow is as follows:
-0. Setup - the basket assembly needs to be set up and some parameters need to be calibrated to the environment (the recognition relies on simple feature tracking and comparison to a predefined motion range, which varies with the physical setup)
-1. Command the agent to do something, e.g. setting up the example scenario mentioned earlier.
+1. Setup - the basket assembly needs to be set up and some parameters need to be calibrated to the environment (the recognition relies on simple feature tracking and comparison to a predefined motion range, which varies with the physical setup)
+2. Command the agent to do something, e.g. setting up the example scenario mentioned earlier.
